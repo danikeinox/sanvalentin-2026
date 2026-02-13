@@ -4,6 +4,6 @@
 - [x] Customize the Project
 - [x] Install Required Extensions
 - [x] Compile the Project
-- [ ] Create and Run Task
+- [x] Create and Run Task
 - [ ] Launch the Project
 - [ ] Ensure Documentation is Complete
