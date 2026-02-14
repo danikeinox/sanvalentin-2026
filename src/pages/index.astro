@@ -48,6 +48,9 @@ const createHeartPoints = (count) => {
 
 const selectedImages = imageList.slice(0, totalPhotos);
 const heartPoints = createHeartPoints(selectedImages.length);
+
+// Novedad: Preparamos las imágenes del reverso en el servidor (máximo 16)
+const floaterImages = selectedImages.slice(0, 16);
 ---
 
 <Layout>
@@ -85,6 +88,15 @@ const heartPoints = createHeartPoints(selectedImages.length);
           </div>
         </div>
         <div class="heart-face heart-back">
+          <div id="redFloaters" class="red-floaters" aria-hidden="true">
+            {
+              floaterImages.map((src, index) => (
+                <div class="red-floater" style={`--delay:${index * 60}ms;`}>
+                  <img src={src} alt={`Recuerdo flotante ${index + 1}`} />
+                </div>
+              ))
+            }
+          </div>
           <div class="red-heart">
             <div class="heart-overlay heart-overlay--back">
               <div class="heart-text">
@@ -108,6 +120,7 @@ const heartPoints = createHeartPoints(selectedImages.length);
   const photoHeart = document.getElementById("photoHeart");
   const hint = document.getElementById("hint");
   const counter = document.getElementById("counter");
+  const redFloaters = document.getElementById("redFloaters");
 
   const startDate = new Date(2022, 7, 26, 0, 0, 0);
 
@@ -123,6 +136,32 @@ const heartPoints = createHeartPoints(selectedImages.length);
       x: startX - absoluteTargetX,
       y: startY - absoluteTargetY,
     };
+  };
+
+  const createHeartPointsClient = (count) => {
+    const points = [];
+    for (let i = 0; i < count; i += 1) {
+      const t = (i / count) * Math.PI * 2;
+      const x = 16 * Math.pow(Math.sin(t), 3);
+      const y =
+        13 * Math.cos(t) -
+        5 * Math.cos(2 * t) -
+        2 * Math.cos(3 * t) -
+        Math.cos(4 * t);
+      points.push({ x, y });
+    }
+
+    const xs = points.map((p) => p.x);
+    const ys = points.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    return points.map((point) => ({
+      x: (point.x - minX) / (maxX - minX),
+      y: 1 - (point.y - minY) / (maxY - minY),
+    }));
   };
 
   const updateCounter = () => {
@@ -159,16 +198,55 @@ const heartPoints = createHeartPoints(selectedImages.length);
     counter.textContent = `${years} años, ${months} meses, ${days} días, ${hours} horas, ${minutes} minutos y ${seconds} segundos`;
   };
 
+  const layoutRedFloaters = () => {
+    if (!redFloaters) return;
+    const redHeart = document.querySelector(".red-heart");
+    if (!redHeart || !(redHeart instanceof HTMLElement)) return;
+    const rect = redHeart.getBoundingClientRect();
+
+    const points = createHeartPointsClient(
+      redFloaters.querySelectorAll(".red-floater").length,
+    );
+    const scale = 1.06;
+    const area = rect.width * scale;
+    redFloaters.style.setProperty("--float-area", `${area}px`);
+
+    Array.from(redFloaters.querySelectorAll(".red-floater")).forEach(
+      (item, index) => {
+        const point = points[index];
+        if (!point) return;
+        // Asignamos las coordenadas como variables CSS
+        item.style.setProperty("--x", point.x);
+        item.style.setProperty("--y", point.y);
+      },
+    );
+  };
+
+  const showRedFloaters = () => {
+    if (!redFloaters) return;
+    requestAnimationFrame(() => {
+      layoutRedFloaters();
+      redFloaters.classList.add("active");
+      redFloaters.setAttribute("aria-hidden", "false");
+    });
+  };
+
+  const hideRedFloaters = () => {
+    if (!redFloaters) return;
+    redFloaters.classList.remove("active");
+    redFloaters.setAttribute("aria-hidden", "true");
+  };
+
   const buildHeart = async () => {
     if (!photoHeart) return;
     const photos = Array.from(photoHeart.querySelectorAll(".photo"));
-    hint?.classList.remove("show");
-
     photos.forEach((photo) => photo.classList.remove("arrived"));
 
     const rect = photoHeart.getBoundingClientRect();
     const photoSize = Math.max(22, Math.min(46, rect.width / 11));
     photoHeart.style.setProperty("--photo-size", `${photoSize}px`);
+    heartStage?.style.setProperty("--photo-size", `${photoSize}px`);
+    redFloaters?.style.setProperty("--float-size", `${photoSize}px`);
 
     photos.forEach((photo) => {
       const x = Number.parseFloat(photo.dataset.x || "0");
@@ -226,7 +304,17 @@ const heartPoints = createHeartPoints(selectedImages.length);
     if (!heartStage.classList.contains("ready") || !heartCard) return;
     const flipToBack = !heartCard.classList.contains("flipped");
     heartCard.classList.toggle("flipped");
-    if (!flipToBack) buildHeart();
+    if (flipToBack) {
+      showRedFloaters();
+      return;
+    }
+    hideRedFloaters();
+    buildHeart();
+  });
+
+  window.addEventListener("resize", () => {
+    if (!redFloaters?.classList.contains("active")) return;
+    layoutRedFloaters();
   });
 </script>
 
@@ -384,6 +472,53 @@ const heartPoints = createHeartPoints(selectedImages.length);
     place-items: center;
   }
 
+  .red-floaters {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--float-area, 280px);
+    height: var(--float-area, 280px);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 0;
+    transform-origin: 50% 50%;
+  }
+
+  .red-floaters.active {
+    opacity: 1;
+    animation: spinOrbit 25s linear infinite;
+  }
+
+  .red-floater {
+    position: absolute;
+    width: var(--float-size, 24px);
+    height: var(--float-size, 24px);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    left: calc(var(--x, 0.5) * 100%);
+    top: calc(var(--y, 0.5) * 100%);
+    transform: translate(-50%, -50%);
+    transition: opacity 0.6s ease;
+    transition-delay: var(--delay, 0ms);
+  }
+
+  .red-floaters.active .red-floater {
+    opacity: 1;
+    animation: counterSpin 25s linear infinite;
+  }
+
+  .red-floater img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: inherit;
+  }
+
   .photo-heart {
     position: relative;
     width: clamp(220px, 72vmin, 520px);
@@ -538,6 +673,24 @@ const heartPoints = createHeartPoints(selectedImages.length);
     padding: 0;
     text-wrap: balance;
     text-align: center;
+  }
+
+  @keyframes spinOrbit {
+    from {
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+    to {
+      transform: translate(-50%, -50%) rotate(360deg);
+    }
+  }
+
+  @keyframes counterSpin {
+    from {
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+    to {
+      transform: translate(-50%, -50%) rotate(-360deg);
+    }
   }
 
   @media (min-width: 600px) {
