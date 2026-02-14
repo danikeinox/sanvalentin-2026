@@ -109,6 +109,13 @@ const floaterImages = selectedImages.slice(0, 16);
         </div>
       </div>
     </div>
+
+    <div id="floaterPopup" class="floater-popup" aria-hidden="true">
+      <div id="floaterPopupBackdrop" class="floater-popup__backdrop"></div>
+      <div class="floater-popup__content">
+        <img id="floaterPopupImage" alt="Imagen ampliada" />
+      </div>
+    </div>
   </main>
 </Layout>
 
@@ -198,6 +205,50 @@ const floaterImages = selectedImages.slice(0, 16);
     counter.textContent = `${years} años, ${months} meses, ${days} días, ${hours} horas, ${minutes} minutos y ${seconds} segundos`;
   };
 
+  // Popup functionality for floaters
+  const popup = document.getElementById("floaterPopup");
+  const popupBackdrop = document.getElementById("floaterPopupBackdrop");
+  const popupImage = document.getElementById("floaterPopupImage");
+
+  const openPopup = (imageSrc) => {
+    if (!popup || !popupImage) return;
+    popupImage.src = imageSrc;
+    popup.classList.add("active");
+    popup.setAttribute("aria-hidden", "false");
+  };
+
+  const closePopup = () => {
+    if (!popup) return;
+    popup.classList.remove("active");
+    popup.setAttribute("aria-hidden", "true");
+  };
+
+  // Add click handlers to red floaters
+  const addFloaterListeners = () => {
+    if (!redFloaters) return;
+    redFloaters.querySelectorAll(".red-floater").forEach((floater) => {
+      floater.style.cursor = "pointer";
+      floater.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const img = floater.querySelector("img");
+        if (img) {
+          const src = img.src;
+          openPopup(src);
+        }
+      });
+    });
+  };
+
+  // Close popup on backdrop click
+  popupBackdrop?.addEventListener("click", closePopup);
+
+  // Close popup on Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closePopup();
+    }
+  });
+
   const layoutRedFloaters = () => {
     if (!redFloaters) return;
     const redHeart = document.querySelector(".red-heart");
@@ -228,6 +279,8 @@ const floaterImages = selectedImages.slice(0, 16);
       layoutRedFloaters();
       redFloaters.classList.add("active");
       redFloaters.setAttribute("aria-hidden", "false");
+      // Add click listeners to floaters after they're shown
+      addFloaterListeners();
     });
   };
 
@@ -479,7 +532,6 @@ const floaterImages = selectedImages.slice(0, 16);
     width: var(--float-area, 280px);
     height: var(--float-area, 280px);
     transform: translate(-50%, -50%);
-    pointer-events: none;
     opacity: 0;
     transition: opacity 0.4s ease;
     z-index: 0;
@@ -504,6 +556,8 @@ const floaterImages = selectedImages.slice(0, 16);
     transform: translate(-50%, -50%);
     transition: opacity 0.6s ease;
     transition-delay: var(--delay, 0ms);
+    pointer-events: auto;
+    cursor: pointer;
   }
 
   .red-floaters.active .red-floater {
@@ -774,6 +828,57 @@ const floaterImages = selectedImages.slice(0, 16);
     .counter {
       font-size: 0.75rem;
       padding: 0;
+    }
+  }
+
+  .floater-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .floater-popup.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .floater-popup__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+  }
+
+  .floater-popup__content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .floater-popup__content img {
+    max-width: 90vmin;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    animation: zoomIn 0.4s ease-out;
+    pointer-events: auto;
+  }
+
+  @keyframes zoomIn {
+    from {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
     }
   }
 </style>
