@@ -87,9 +87,11 @@ const heartPoints = createHeartPoints(selectedImages.length);
         <div class="heart-face heart-back">
           <div class="red-heart">
             <div class="heart-overlay heart-overlay--back">
-              <h2>Te Amo</h2>
-              <p>Estoy muy feliz de estar contigo mi amor</p>
-              <div id="counter" class="counter"></div>
+              <div class="heart-text">
+                <h2>Te Amo</h2>
+                <p>Estoy muy feliz de estar contigo mi amor</p>
+                <div id="counter" class="counter"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -110,14 +112,6 @@ const heartPoints = createHeartPoints(selectedImages.length);
   const startDate = new Date(2022, 7, 26, 0, 0, 0);
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  const loadImage = (src) =>
-    new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(src);
-      img.onerror = reject;
-      img.src = src;
-    });
 
   const getStartOffset = (targetX, targetY, rect) => {
     const fromLeft = Math.random() > 0.5;
@@ -229,19 +223,21 @@ const heartPoints = createHeartPoints(selectedImages.length);
   startButton?.addEventListener("click", startSequence);
 
   heartStage?.addEventListener("click", () => {
-    if (!heartStage.classList.contains("ready")) return;
-    heartCard?.classList.toggle("flipped");
+    if (!heartStage.classList.contains("ready") || !heartCard) return;
+    const flipToBack = !heartCard.classList.contains("flipped");
+    heartCard.classList.toggle("flipped");
+    if (!flipToBack) buildHeart();
   });
 </script>
 
 <style>
   .scene {
-    min-height: 100vh;
+    min-height: 100svh;
     display: grid;
     place-items: center;
     position: relative;
     overflow: hidden;
-    padding: 1.5rem;
+    padding: clamp(1rem, 3vw, 2.5rem);
   }
 
   .overlay {
@@ -299,6 +295,8 @@ const heartPoints = createHeartPoints(selectedImages.length);
     max-width: 90vw;
     z-index: 99;
     padding-bottom: 100px;
+    text-align: center;
+    align-items: center;
   }
 
   .message small {
@@ -318,11 +316,13 @@ const heartPoints = createHeartPoints(selectedImages.length);
     pointer-events: none;
     z-index: 99;
     transform: translate(0, 0) scale(0.9);
+    font-size: 1.65rem;
+    margin: 0 auto;
   }
 
   .heart-stage {
-    width: 82vmin;
-    height: 82vmin;
+    width: clamp(260px, 82vmin, 560px);
+    height: clamp(260px, 82vmin, 560px);
     perspective: 1200px;
     -webkit-perspective: 1200px;
     opacity: 0;
@@ -334,6 +334,7 @@ const heartPoints = createHeartPoints(selectedImages.length);
     pointer-events: none;
     display: grid;
     place-items: center;
+    margin: 0 auto;
   }
 
   .heart-stage.visible {
@@ -376,13 +377,17 @@ const heartPoints = createHeartPoints(selectedImages.length);
     flex-direction: column;
     gap: 1.2rem;
     text-align: center;
-    padding: 1rem;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
   }
 
   .photo-heart {
     position: relative;
-    width: 72vmin;
-    height: 72vmin;
+    width: clamp(220px, 72vmin, 520px);
+    height: clamp(220px, 72vmin, 520px);
     margin: 0 auto;
   }
 
@@ -398,6 +403,7 @@ const heartPoints = createHeartPoints(selectedImages.length);
     pointer-events: none;
     color: #ffe3e7;
     text-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    margin: 0 auto;
   }
 
   .heart-overlay h2 {
@@ -458,13 +464,17 @@ const heartPoints = createHeartPoints(selectedImages.length);
   }
 
   .red-heart {
-    width: 46vmin;
-    height: 46vmin;
+    width: clamp(200px, 52vmin, 420px);
+    height: clamp(200px, 52vmin, 420px);
     position: relative;
     background: #f43f5e;
     transform: rotate(-45deg);
     border-radius: 18px;
     overflow: visible;
+    z-index: 1;
+    margin: 0 auto;
+    align-self: center;
+    justify-self: center;
   }
 
   .red-heart::before,
@@ -488,11 +498,25 @@ const heartPoints = createHeartPoints(selectedImages.length);
   }
 
   .heart-overlay--back {
+    position: absolute;
+    inset: 0;
     transform: rotate(45deg);
     padding: 1rem;
     color: #ffe3e7;
     text-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
     z-index: 2;
+    display: grid;
+    place-items: center;
+    text-align: center;
+  }
+
+  .heart-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    text-align: center;
+    transform: translateY(-16%);
   }
 
   .heart-overlay--back h2 {
@@ -505,22 +529,18 @@ const heartPoints = createHeartPoints(selectedImages.length);
     letter-spacing: 0.05em;
     text-transform: none;
     max-width: 85%;
+    margin: 0 auto;
   }
 
   .counter {
     font-size: 0.85rem;
     color: #f7c8d0;
-    padding: 0.7rem 1.1rem;
-    border-radius: 999px;
-    background: rgba(244, 63, 94, 0.15);
+    padding: 0;
     text-wrap: balance;
+    text-align: center;
   }
 
   @media (min-width: 600px) {
-    .scene {
-      padding: 2rem;
-    }
-
     .love-button {
       padding: 0.95rem 2.4rem;
       font-size: 1.05rem;
@@ -532,16 +552,6 @@ const heartPoints = createHeartPoints(selectedImages.length);
 
     .message small {
       font-size: 1.2rem;
-    }
-
-    .heart-stage {
-      width: min(78vmin, 560px);
-      height: min(78vmin, 560px);
-    }
-
-    .photo-heart {
-      width: min(70vmin, 520px);
-      height: min(70vmin, 520px);
     }
 
     .heart-overlay h2 {
@@ -558,10 +568,6 @@ const heartPoints = createHeartPoints(selectedImages.length);
   }
 
   @media (min-width: 900px) {
-    .scene {
-      padding: 3rem;
-    }
-
     .love-button {
       font-size: 1.2rem;
     }
@@ -585,6 +591,10 @@ const heartPoints = createHeartPoints(selectedImages.length);
     .heart-overlay--back p {
       font-size: 1.05rem;
     }
+
+    .heart-text {
+      transform: translateY(-45%);
+    }
   }
 
   @media (max-width: 420px) {
@@ -594,6 +604,10 @@ const heartPoints = createHeartPoints(selectedImages.length);
 
     .message small {
       font-size: 0.85rem;
+    }
+
+    .message.in-heart {
+      font-size: 1.35rem;
     }
 
     .heart-overlay--back h2 {
@@ -606,7 +620,7 @@ const heartPoints = createHeartPoints(selectedImages.length);
 
     .counter {
       font-size: 0.75rem;
-      padding: 0.6rem 0.9rem;
+      padding: 0;
     }
   }
 </style>
